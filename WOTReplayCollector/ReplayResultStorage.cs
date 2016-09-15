@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -19,16 +20,8 @@ namespace WOTReplayCollector
 
         public void Dump()
         {
-            var json = new DataContractJsonSerializer(typeof(ReplayInfo));
-
-            using (var writer = File.OpenWrite(@".\dump.txt"))
-            {
-                foreach (var replay in Replays)
-                {
-                    json.WriteObject(writer, replay);
-                }
-
-            }
+            var json = JsonConvert.SerializeObject(Replays);
+            File.WriteAllText(@".\dump.txt", json);
         }
     }
 }
