@@ -30,7 +30,7 @@ namespace WOTReplayCollector
                 var replays = new ReplayCollector("http://wotreplays.com/", titleKeywords.ToArray(), descKeywords.ToArray())
                     .Collect(pages);
 
-                return;
+                new ReplayResultStorage(replays).Dump();
             }
             catch(OptionException e)
             {

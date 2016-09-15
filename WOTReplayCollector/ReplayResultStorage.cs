@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.Serialization.Json;
 using System.Text;
@@ -18,9 +19,15 @@ namespace WOTReplayCollector
 
         public void Dump()
         {
-            foreach(var replay in Replays)
+            var json = new DataContractJsonSerializer(typeof(ReplayInfo));
+
+            using (var writer = File.OpenWrite(@".\dump.txt"))
             {
-                var json = new DataContractJsonSerializer(typeof(ReplayInfo));
+                foreach (var replay in Replays)
+                {
+                    json.WriteObject(writer, replay);
+                }
+
             }
         }
     }
