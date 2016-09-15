@@ -10,7 +10,7 @@ namespace WOTReplayCollector
     {
         static void Main(string[] args)
         {
-            var replays = new ReplayCollector("http://wotreplays.com/", new string[] { })
+            var replays = new ReplayCollector("http://wotreplays.com/", new string[] { "love" }, new string[] { })
                 .Collect(1);
 
             foreach(var replay in replays)

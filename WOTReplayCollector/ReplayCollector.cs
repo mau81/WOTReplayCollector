@@ -8,18 +8,31 @@ using System.Threading.Tasks;
 
 namespace WOTReplayCollector
 {
+    enum ReplayWotVersion
+    {
+        Ver_9_15_1_1 = 49
+    }
+
     class ReplayCollector
     {
         public string Url { get; set; }
 
-        public string [] Keywords { get; set; }
+        public string [] TitleKeywords { get; set; }
+
+        public string [] DescKeywords { get; set; }
 
         public string WOTVersion { get;  set; }
 
-        public ReplayCollector(string url, string[] keywords)
+        public ReplayWotVersion Version { get; set; }
+
+        public ReplayCollector(string url, string[] titleKeywords, string[] descKeywords, 
+                               ReplayWotVersion version = ReplayWotVersion.Ver_9_15_1_1)
         {
             Url = url;
-            Keywords = keywords;
+            Version = version;
+
+            TitleKeywords = titleKeywords;
+            DescKeywords = descKeywords;
         }
 
         public ReplayInfo[] Collect(int pages)
@@ -51,11 +64,11 @@ namespace WOTReplayCollector
 
                 List<ReplayInfo> replays = GetReplayInfoList(html);
 
-                if (Keywords != null && Keywords.Length > 0)
+                if (TitleKeywords != null && TitleKeywords.Length > 0)
                 {
                     foreach (var replay in replays)
                     {
-                        foreach (var keyword in Keywords)
+                        foreach (var keyword in TitleKeywords)
                         {
                             if (replay.Title.ToUpper().Contains(keyword.ToUpper()) ||
                                 replay.Description.ToUpper().Contains(keyword.ToUpper()))
@@ -65,7 +78,24 @@ namespace WOTReplayCollector
                         }
                     }
                 }
-                else
+
+                if (DescKeywords != null && DescKeywords.Length > 0)
+                {
+                    foreach (var replay in replays)
+                    {
+                        foreach (var keyword in DescKeywords)
+                        {
+                            if (replay.Description.ToUpper().Contains(keyword.ToUpper()) ||
+                                replay.Description.ToUpper().Contains(keyword.ToUpper()))
+                            {
+                                result.Add(replay);
+                            }
+                        }
+                    }
+                }
+
+                if((TitleKeywords == null || TitleKeywords.Length == 0) &&
+                   (DescKeywords == null || DescKeywords.Length == 0))
                 {
                     result.AddRange(replays);
                 }
@@ -84,7 +114,7 @@ namespace WOTReplayCollector
 
         string GetNextUrl(int index)
         {
-            return String.Format("http://wotreplays.com/site/index/version/{0}/sort/uploaded_at.desc/page/{1}/", 49, index);
+            return String.Format("http://wotreplays.com/site/index/version/{0}/sort/uploaded_at.desc/page/{1}/", (int)Version, index);
         }
 
         List<ReplayInfo> GetReplayInfoList(string html)
@@ -105,10 +135,8 @@ namespace WOTReplayCollector
 
             foreach (var node in nodes)
             {
-
-                var title = node.SelectSingleNode("//a[@class='link--pale_orange']").InnerText;
-                string url = "http://wotreplays.com" + node.SelectSingleNode("//a[@class='link--pale_orange']").Attributes["href"].Value;
-
+                var title = node.SelectSingleNode(".//a[@class='link--pale_orange']").InnerText;
+                string url = "http://wotreplays.com" + node.SelectSingleNode(".//a[@class='link--pale_orange']").Attributes["href"].Value;
                 var gameInfo = node.SelectSingleNode("//ul[@class='r-info_ci']");
                 string tank = gameInfo.ChildNodes[1].InnerText.Substring(6);
                 string map = gameInfo.ChildNodes[3].InnerText.Substring(5);
