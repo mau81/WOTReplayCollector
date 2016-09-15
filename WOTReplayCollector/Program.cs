@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using NDesk.Options;
 
 namespace WOTReplayCollector
 {
@@ -10,15 +11,32 @@ namespace WOTReplayCollector
     {
         static void Main(string[] args)
         {
-            var replays = new ReplayCollector("http://wotreplays.com/", new string[] { "love" }, new string[] { })
-                .Collect(1);
+            var titleKeywords = new List<string>();
+            var descKeywords = new List<string>();
 
-            foreach(var replay in replays)
+            var pages = 1;
+
+            var options = new OptionSet()
             {
-                Console.WriteLine("{0}\n\n\n", replay);
-            }
+                { "t|title=", "Keyword to be search in title", v => titleKeywords.Add(v) },
+                { "d|description=", "Keyword to be search in description", v => descKeywords.Add(v) },
+                { "p|pages=", "Number of web pages to be collected", (int v) => pages = v }
+            };
 
-            return;
+            try
+            {
+                options.Parse(args);
+
+                var replays = new ReplayCollector("http://wotreplays.com/", titleKeywords.ToArray(), descKeywords.ToArray())
+                    .Collect(pages);
+
+                return;
+            }
+            catch(OptionException e)
+            {
+                Console.Write("Exception when parsing input parameters: ");
+                Console.WriteLine(e.Message);
+            }
         }
     }
 }
