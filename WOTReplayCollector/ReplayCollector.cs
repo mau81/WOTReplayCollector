@@ -10,7 +10,8 @@ namespace WOTReplayCollector
 {
     enum ReplayWotVersion
     {
-        Ver_9_15_1_1 = 49
+        Ver_9_15_1_1 = 49,
+        Ver_9_15_2 = 51
     }
 
     class ReplayCollector
@@ -26,7 +27,7 @@ namespace WOTReplayCollector
         public ReplayWotVersion Version { get; set; }
 
         public ReplayCollector(string url, string[] titleKeywords, string[] descKeywords, 
-                               ReplayWotVersion version = ReplayWotVersion.Ver_9_15_1_1)
+                               ReplayWotVersion version = ReplayWotVersion.Ver_9_15_2)
         {
             Url = url;
             Version = version;
@@ -40,7 +41,7 @@ namespace WOTReplayCollector
             var result = new List<ReplayInfo>();
             var client = new HttpClient();
             bool endOfCollecting = false;
-            int pageIndex = 1;            
+            int pageIndex = 0;            
 
             var currentUrl = Url;
 
@@ -103,6 +104,8 @@ namespace WOTReplayCollector
                 --pages;
                 ++pageIndex;
 
+                Console.WriteLine("Collecting page #{0}. Number of replays collected: {1}\n", pageIndex + 1, result.Count);
+
                 /* set up next page to be fetched */
                 currentUrl = GetNextUrl(pageIndex);
             }          
@@ -135,39 +138,46 @@ namespace WOTReplayCollector
 
             foreach (var node in nodes)
             {
-                var title = node.SelectSingleNode(".//a[@class='link--pale_orange']").InnerText;
-                string url = "http://wotreplays.com" + node.SelectSingleNode(".//a[@class='link--pale_orange']").Attributes["href"].Value;
-                var gameInfo = node.SelectSingleNode("//ul[@class='r-info_ci']");
-                string tank = gameInfo.ChildNodes[1].InnerText.Substring(6);
-                string map = gameInfo.ChildNodes[3].InnerText.Substring(5);
-                string sent = gameInfo.ChildNodes[5].InnerText.Substring(6);
-                string player = gameInfo.ChildNodes[7].InnerText.Substring(8);
-                string description = string.Empty;
-
-                // Get description from subpage
-                var httpResult = client.GetAsync(url ).Result;
-                if (httpResult.StatusCode != System.Net.HttpStatusCode.OK)
+                try
                 {
-                    Console.WriteLine("Could not fetch HTML (description) page (status code = {0}", httpResult.StatusCode.ToString());
-                }
-                else
-                {
-                    var descHtml = httpResult.Content.ReadAsStringAsync().Result;
-                    descDoc.LoadHtml(descHtml);
+                    var title = node.SelectSingleNode(".//a[@class='link--pale_orange']").InnerText;
+                    string url = "http://wotreplays.com" + node.SelectSingleNode(".//a[@class='link--pale_orange']").Attributes["href"].Value;
+                    var gameInfo = node.SelectSingleNode("//ul[@class='r-info_ci']");
+                    string tank = gameInfo.ChildNodes[1].InnerText.Substring(6);
+                    string map = gameInfo.ChildNodes[3].InnerText.Substring(5);
+                    string sent = gameInfo.ChildNodes[5].InnerText.Substring(6);
+                    string player = gameInfo.ChildNodes[7].InnerText.Substring(8);
+                    string description = string.Empty;
 
-                    var descInfo = descDoc.DocumentNode.SelectSingleNode("//p[@id='descriptionContainer']");
-                    description = descInfo.InnerText;
-                }
-                result.Add(
-                    new ReplayInfo
+                    // Get description from subpage
+                    var httpResult = client.GetAsync(url).Result;
+                    if (httpResult.StatusCode != System.Net.HttpStatusCode.OK)
                     {
-                        Title = title,
-                        Url = url,
-                        Tank = tank,
-                        Player = player,
-                        Uploaded = DateTime.Parse(sent),
-                        Description = description
-                    });
+                        Console.WriteLine("Could not fetch HTML (description) page (status code = {0}", httpResult.StatusCode.ToString());
+                    }
+                    else
+                    {
+                        var descHtml = httpResult.Content.ReadAsStringAsync().Result;
+                        descDoc.LoadHtml(descHtml);
+
+                        var descInfo = descDoc.DocumentNode.SelectSingleNode("//p[@id='descriptionContainer']");
+                        description = descInfo.InnerText;
+                    }
+                    result.Add(
+                        new ReplayInfo
+                        {
+                            Title = title,
+                            Url = url,
+                            Tank = tank,
+                            Player = player,
+                            Uploaded = DateTime.Parse(sent),
+                            Description = description
+                        });
+                }
+                catch
+                {
+                    break;
+                }
             }
 
             client.Dispose();

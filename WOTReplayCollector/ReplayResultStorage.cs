@@ -20,8 +20,14 @@ namespace WOTReplayCollector
 
         public void Dump()
         {
-            var json = JsonConvert.SerializeObject(Replays);
-            File.WriteAllText(@".\dump.txt", json);
+            var result = new StringBuilder();
+
+            foreach(var replay in Replays)
+            {
+                result.Append(String.Format("{0}\n", replay.Url));
+            }
+
+            File.WriteAllText(@".\dump.txt", result.ToString());
         }
     }
 }
