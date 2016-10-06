@@ -11,7 +11,8 @@ namespace WOTReplayCollector
     enum ReplayWotVersion
     {
         Ver_9_15_1_1 = 49,
-        Ver_9_15_2 = 51
+        Ver_9_15_2 = 51,
+        Ver_9_16 = 50     
     }
 
     class ReplayCollector
@@ -71,8 +72,16 @@ namespace WOTReplayCollector
                     {
                         foreach (var keyword in TitleKeywords)
                         {
-                            if (replay.Title.ToUpper().Contains(keyword.ToUpper()) ||
-                                replay.Description.ToUpper().Contains(keyword.ToUpper()))
+                            var keywords = new String[]
+                            {
+                                String.Format("{0} ", keyword.ToUpper()),
+                                String.Format(" {0}", keyword.ToUpper()),
+                                String.Format("{0} ", keyword.ToUpper()),
+                                String.Format(" {0}", keyword.ToUpper())
+                            };
+
+                            if (keywords.Any(s => replay.Description.ToUpper().Contains(s)
+                                                  || replay.Title.ToUpper().Contains(s)))
                             {
                                 result.Add(replay);
                             }
@@ -86,8 +95,16 @@ namespace WOTReplayCollector
                     {
                         foreach (var keyword in DescKeywords)
                         {
-                            if (replay.Description.ToUpper().Contains(keyword.ToUpper()) ||
-                                replay.Description.ToUpper().Contains(keyword.ToUpper()))
+                            var keywords = new String[]
+                            {
+                                String.Format("{0} ", keyword.ToUpper()),
+                                String.Format(" {0}", keyword.ToUpper()),
+                                String.Format("{0} ", keyword.ToUpper()),
+                                String.Format(" {0}", keyword.ToUpper())
+                            };
+
+                            if (keywords.Any(s => replay.Description.ToUpper().Contains(s)
+                                                  || replay.Title.ToUpper().Contains(s)))
                             {
                                 result.Add(replay);
                             }
