@@ -28,7 +28,7 @@ namespace WOTReplayCollector
         public ReplayWotVersion Version { get; set; }
 
         public ReplayCollector(string url, string[] titleKeywords, string[] descKeywords, 
-                               ReplayWotVersion version = ReplayWotVersion.Ver_9_15_2)
+                               ReplayWotVersion version = ReplayWotVersion.Ver_9_16)
         {
             Url = url;
             Version = version;
