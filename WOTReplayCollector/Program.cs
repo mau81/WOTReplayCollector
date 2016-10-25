@@ -28,7 +28,7 @@ namespace WOTReplayCollector
                 options.Parse(args);
 
                 var replays = new ReplayCollector("http://wotreplays.com/", titleKeywords.ToArray(), descKeywords.ToArray())
-                    .Collect(pages);
+                    .Collect(1, pages);
 
                  new ReplayResultStorage(replays).Dump();
             }

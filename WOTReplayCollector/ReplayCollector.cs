@@ -1,6 +1,8 @@
 ﻿using HtmlAgilityPack;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
@@ -19,26 +21,44 @@ namespace WOTReplayCollector
     {
         public string Url { get; set; }
 
-        public string [] TitleKeywords { get; set; }
+        public string[] TitleKeywords { get; set; }
 
-        public string [] DescKeywords { get; set; }
+        public string[] DescKeywords { get; set; }
+
+        public string[] Keywords { get; private set; }
 
         public string WOTVersion { get;  set; }
 
         public ReplayWotVersion Version { get; set; }
 
         public ReplayCollector(string url, string[] titleKeywords, string[] descKeywords, 
-                               ReplayWotVersion version = ReplayWotVersion.Ver_9_16)
+                               ReplayWotVersion version = ReplayWotVersion.Ver_9_15_2)
         {
             Url = url;
             Version = version;
 
             TitleKeywords = titleKeywords;
             DescKeywords = descKeywords;
+
+            var tmpKeywords = new List<string>();
+            foreach(var tmpKeyword in TitleKeywords.Concat(DescKeywords))
+            {
+                tmpKeywords.AddRange(
+                        new String[] {
+                                String.Format("{0} ", tmpKeyword.ToUpper()),
+                                String.Format(" {0}", tmpKeyword.ToUpper()),
+                                String.Format("{0} ", tmpKeyword.ToUpper()),
+                                String.Format(" {0}", tmpKeyword.ToUpper())
+                        }
+                    );
+            }
+            Keywords = tmpKeywords.ToArray();
         }
 
         public ReplayInfo[] Collect(int pages)
         {
+            var watch = Stopwatch.StartNew();
+
             var result = new List<ReplayInfo>();
             var client = new HttpClient();
             bool endOfCollecting = false;
@@ -74,10 +94,7 @@ namespace WOTReplayCollector
                         {
                             var keywords = new String[]
                             {
-                                String.Format("{0} ", keyword.ToUpper()),
-                                String.Format(" {0}", keyword.ToUpper()),
-                                String.Format("{0} ", keyword.ToUpper()),
-                                String.Format(" {0}", keyword.ToUpper())
+
                             };
 
                             if (keywords.Any(s => replay.Description.ToUpper().Contains(s)
@@ -95,15 +112,7 @@ namespace WOTReplayCollector
                     {
                         foreach (var keyword in DescKeywords)
                         {
-                            var keywords = new String[]
-                            {
-                                String.Format("{0} ", keyword.ToUpper()),
-                                String.Format(" {0}", keyword.ToUpper()),
-                                String.Format("{0} ", keyword.ToUpper()),
-                                String.Format(" {0}", keyword.ToUpper())
-                            };
-
-                            if (keywords.Any(s => replay.Description.ToUpper().Contains(s)
+                            if (Keywords.Any(s => replay.Description.ToUpper().Contains(s)
                                                   || replay.Title.ToUpper().Contains(s)))
                             {
                                 result.Add(replay);
@@ -124,15 +133,89 @@ namespace WOTReplayCollector
                 Console.WriteLine("Collecting page #{0}. Number of replays collected: {1}\n", pageIndex + 1, result.Count);
 
                 /* set up next page to be fetched */
-                currentUrl = GetNextUrl(pageIndex);
+                currentUrl = GetUrlFor(pageIndex);
             }          
 
-            client.Dispose();            
+            client.Dispose();
+
+            watch.Stop();
+            Debug.Print(String.Format("{0} replays has been collected in {1} ms", result.Count, watch.ElapsedMilliseconds));
 
             return result.ToArray();
         }
 
-        string GetNextUrl(int index)
+        public ReplayInfo[] Collect(int startPage, int pagesCount)
+        {
+            var watch = Stopwatch.StartNew();
+
+            var parallelResult = new BlockingCollection<ReplayInfo>();
+            var replayPagesUrls = new BlockingCollection<string>();
+
+            var parallelOptions = new ParallelOptions();
+            parallelOptions.MaxDegreeOfParallelism = 16;
+            Parallel.ForEach(Enumerable.Range(startPage, pagesCount), parallelOptions,
+                (page) =>
+            {
+                // Build URL for page with replays.
+                var pageUrl = GetUrlFor(page);
+                var replaysPageListHtml = GetReplayListPage(pageUrl);
+
+                if (replaysPageListHtml != null)
+                {
+                    List<ReplayInfo> replays = GetReplayInfoList(replaysPageListHtml);
+                    foreach(var replay in replays)
+                    {
+                        parallelResult.Add(replay);
+                    }
+                }
+                else
+                {
+                    Debug.Print("Could not parse HTML page!");
+                }
+            });
+
+            var result = new List<ReplayInfo>();
+            foreach(var replay in parallelResult)
+            {
+                var allKeywords = new List<string>(DescKeywords.Concat(TitleKeywords));
+                foreach (var keyword in allKeywords)
+                {
+                    if (Keywords.Any(s => replay.Description.ToUpper().Contains(s)
+                                          || replay.Title.ToUpper().Contains(s)))
+                    {
+                        if (!result.Contains(replay))
+                        {
+                            result.Add(replay);
+                        }
+                    }
+                }
+            }
+
+            watch.Stop();
+            Debug.Print(String.Format("{0} replays has been collected in {1} ms", result.Count, watch.ElapsedMilliseconds));
+
+            return result.ToArray();
+        }
+
+        string GetReplayListPage(string url)
+        {
+            var client = new HttpClient();
+
+            var htmlResult = client.GetAsync(url).Result;
+            if (htmlResult.StatusCode != System.Net.HttpStatusCode.OK)
+            {
+                Console.WriteLine("Could not fetch HTML page (status code = {0}", htmlResult.StatusCode.ToString());
+                return null;
+            }
+            else
+            {
+                var result = htmlResult.Content.ReadAsStringAsync().Result;
+                client.Dispose();
+                return result;
+            }
+        }
+
+        string GetUrlFor(int index)
         {
             return String.Format("http://wotreplays.com/site/index/version/{0}/sort/uploaded_at.desc/page/{1}/", (int)Version, index);
         }

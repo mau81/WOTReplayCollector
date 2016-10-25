@@ -27,6 +27,9 @@ namespace WOTReplayCollector
         [DataMember]
         public DateTime Uploaded { get; set; }
 
+        [DataMember]
+        public string[] Keywords { get; set; }
+
         public override string ToString()
         {
             return String.Format("Title: {0}\nPlayer: {1}\nTank: {2}\n Uploaded: {3}\n URL: \n Description: {5}\n", 
