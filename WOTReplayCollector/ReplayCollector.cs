@@ -14,7 +14,8 @@ namespace WOTReplayCollector
     {
         Ver_9_15_1_1 = 49,
         Ver_9_15_2 = 51,
-        Ver_9_16 = 50     
+        Ver_9_16 = 50,
+        Ver_9_17 = 53,     
     }
 
     class ReplayCollector
@@ -32,7 +33,7 @@ namespace WOTReplayCollector
         public ReplayWotVersion Version { get; set; }
 
         public ReplayCollector(string url, string[] titleKeywords, string[] descKeywords, 
-                               ReplayWotVersion version = ReplayWotVersion.Ver_9_15_2)
+                               ReplayWotVersion version = ReplayWotVersion.Ver_9_17)
         {
             Url = url;
             Version = version;
@@ -100,6 +101,8 @@ namespace WOTReplayCollector
                             if (keywords.Any(s => replay.Description.ToUpper().Contains(s)
                                                   || replay.Title.ToUpper().Contains(s)))
                             {
+                                replay.Keywords.Add(keyword);
+
                                 result.Add(replay);
                             }
                         }
@@ -115,6 +118,8 @@ namespace WOTReplayCollector
                             if (Keywords.Any(s => replay.Description.ToUpper().Contains(s)
                                                   || replay.Title.ToUpper().Contains(s)))
                             {
+                                replay.Keywords.Add(keyword);
+
                                 result.Add(replay);
                             }
                         }

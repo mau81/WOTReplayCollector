@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Runtime.Serialization;
 
 namespace WOTReplayCollector
@@ -6,6 +7,11 @@ namespace WOTReplayCollector
     [DataContract]
     public class ReplayInfo
     {
+        public ReplayInfo()
+        {
+            Keywords = new List<string>();
+        }
+
         [DataMember]
         public string Title { get; set; }
 
@@ -28,7 +34,7 @@ namespace WOTReplayCollector
         public DateTime Uploaded { get; set; }
 
         [DataMember]
-        public string[] Keywords { get; set; }
+        public List<string> Keywords { get; set; }
 
         public override string ToString()
         {

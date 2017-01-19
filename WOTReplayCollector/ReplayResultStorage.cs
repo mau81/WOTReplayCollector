@@ -24,7 +24,7 @@ namespace WOTReplayCollector
 
             foreach(var replay in Replays)
             {
-                result.Append(String.Format("{0}\n", replay.Url));
+                result.Append(String.Format("{0} {1}\n",replay.Keywords[0], replay.Url));
             }
 
             File.WriteAllText(@".\dump.txt", result.ToString());
